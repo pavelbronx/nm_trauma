@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дашборд оценки качества медицинских документов</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #3498db;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #2c3e50;
+        }
+        h4 {
+            color: #3498db;
+            margin-top: 20px;
+        }
+        .input-section {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        select, textarea {
+            padding: 8px;
+            width: 200px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        textarea {
+            width: 100%;
+            height: 80px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .stats-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .stat-card {
+            background-color: white;
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            flex: 1;
+            margin: 0 10px;
+            min-width: 200px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .criteria-section {
+            margin-bottom: 30px;
+        }
+        .criteria-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .criteria-card {
+            background-color: white;
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .criteria-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .criteria-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .criteria-list li:last-child {
+            border-bottom: none;
+        }
+        .charts-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .chart-container {
+            background-color: white;
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            height: 300px;
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .ai-assistant {
+            background-color: #f0f8ff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .ai-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .ai-icon {
+            font-size: 24px;
+            margin-right: 10px;
+            color: #3498db;
+        }
+        .ai-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .ai-controls textarea {
+            flex-grow: 1;
+        }
+        .ai-response {
+            background-color: white;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 15px;
+            min-height: 150px;
+            border: 1px solid #ddd;
+        }
+        .suggestion {
+            font-style: italic;
+            color: #666;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .ai-charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .ai-chart-container {
+            background-color: white;
+            border-radius: 5px;
+            padding: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            height: 250px;
+            text-align: center;
+        }
+        .dynamic-charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        @media (max-width: 768px) {
+            .charts-section, .criteria-grid, .ai-charts, .dynamic-charts {
+                grid-template-columns: 1fr;
+            }
+            .stats-section {
+                flex-direction: column;
+            }
+            .stat-card {
+                margin: 10px 0;
+            }
+            .ai-controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Дашборд оценки качества медицинских документов</h1>
+        <p>На основе приказа 203Н от 10 мая 2017 года, коды МКБ-10: S02.0; S06; S07.1; S07.8</p>
+        
+        <div class="input-section">
+            <div class="input-group">
+                <label for="periodSelector">Выберите период:</label>
+                <select id="periodSelector" onchange="updateDashboard()">
+                    <option value="year" selected>За год</option>
+                    <option value="10302">Январь 2025</option>
+                    <option value="9530">Февраль 2025</option>
+                    <option value="2489">Март 2025</option>
+                    <option value="3763">Апрель 2025</option>
+                    <option value="5673">Май 2025</option>
+                    <option value="2376">Июнь 2025</option>
+                    <option value="5376">Июль 2025</option>
+                    <option value="6859">Август 2025</option>
+                    <option value="8666">Сентябрь 2025</option>
+                    <option value="5664">Октябрь 2025</option>
+                </select>
+                <button onclick="updateDashboard()">Обновить данные</button>
+            </div>
+        </div>
+        
+        <div class="stats-section">
+            <div class="stat-card">
+                <h3>Всего документов</h3>
+                <div class="stat-value" id="totalValue">55,494</div>
+            </div>
+            <div class="stat-card">
+                <h3>С ошибками</h3>
+                <div class="stat-value" id="errorsValue">3,304</div>
+            </div>
+            <div class="stat-card">
+                <h3>Успешных</h3>
+                <div class="stat-value" id="successValue">52,190</div>
+            </div>
+            <div class="stat-card">
+                <h3>Процент ошибок</h3>
+                <div class="stat-value" id="errorPercentage">6.0%</div>
+            </div>
+        </div>
+        
+        <div class="criteria-section">
+            <h2>Критерии качества согласно п. 3.18.1 Приказа 203Н</h2>
+            <div class="criteria-grid">
+                <div class="criteria-card">
+                    <h3>Общие критерии качества</h3>
+                    <ul class="criteria-list">
+                        <li>Своевременность оказания медицинской помощи</li>
+                        <li>Полнота первичного осмотра и обследования</li>
+                        <li>Обоснованность диагноза</li>
+                        <li>Адекватность назначенного лечения</li>
+                        <li>Оценка факторов риска и сопутствующих заболеваний</li>
+                        <li>Своевременность и полнота диагностических мероприятий</li>
+                        <li>Оценка эффективности лечения</li>
+                        <li>Наличие плана динамического наблюдения</li>
+                    </ul>
+                </div>
+                <div class="criteria-card">
+                    <h3>Специфические критерии для травматологии</h3>
+                    <ul class="criteria-list">
+                        <li>Оценка характера и механизма травмы</li>
+                        <li>Оценка неврологического статуса при ЧМТ</li>
+                        <li>Оценка состояния сознания по шкале Глазго</li>
+                        <li>Оценка витальных функций</li>
+                        <li>Проведение рентгенологического исследования</li>
+                        <li>Оценка необходимости госпитализации</li>
+                        <li>Назначение адекватного обезболивания</li>
+                        <li>Оценка необходимости хирургического вмешательства</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="charts-section">
+            <div class="chart-container">
+                <canvas id="pieChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="barChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="criteriaPerformanceChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="documentationQualityChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="dynamic-charts">
+            <div class="chart-container">
+                <canvas id="documentsDynamicChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="errorsDynamicChart"></canvas>
+            </div>
+        </div>
+        
+        <h2>Выполнение критериев качества</h2>
+        <div class="table-container">
+            <table id="criteriaTable">
+                <thead>
+                    <tr>
+                        <th>Критерий качества</th>
+                        <th>Выполнено</th>
+                        <th>Не выполнено</th>
+                        <th>% выполнения</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Данные будут заполнены JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        
+        <h2>Качество документации по критериям</h2>
+        <div class="table-container">
+            <table id="documentationTable">
+                <thead>
+                    <tr>
+                        <th>Критерий документации</th>
+                        <th>Соответствует</th>
+                        <th>Не соответствует</th>
+                        <th>% соответствия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Данные будут заполнены JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Блок AI-помощника -->
+        <div class="ai-assistant">
+            <div class="ai-header">
+                <div class="ai-icon">🤖</div>
+                <h2>AI-помощник для создания отчетов</h2>
+            </div>
+            <p>Введите запрос для генерации отчета. Например: "создай отчет по травматологии за последние 3 месяца"</p>
+            
+            <div class="ai-controls">
+                <textarea id="aiQuery" placeholder="Введите ваш запрос здесь...">создай отчет по травматологии за последние 3 месяца</textarea>
+                <button onclick="generateReport()">Сгенерировать отчет</button>
+            </div>
+            
+            <div class="suggestion">
+                Попробуйте заменить "травматология" на: ССЗ, онкология, педиатрия или гинекология
+            </div>
+            
+            <div class="ai-response" id="aiResponse">
+                Отчет будет отображен здесь после генерации...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация переменных для хранения данных
+        let totalDocuments = 55494; // Сумма за год
+        let totalErrors = 3304; // Сумма ошибок за год
+        
+        // Данные по месяцам
+        const monthlyData = {
+            labels: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь'],
+            documents: [10302, 9530, 2489, 3763, 5673, 2376, 5376, 6859, 8666, 5664],
+            errorRates: [5, 8, 3, 13, 11, 2, 5, 6, 8, 4],
+            errors: [515, 762, 75, 489, 624, 48, 269, 412, 693, 227] // Рассчитано на основе документов и процентов ошибок
+        };
+        
+        // Фиксированные ошибки по кодам МКБ по месяцам
+        const monthlyErrorsByCode = {
+            '10302': { // Январь - базовые значения
+                'S02.0': 24,
+                'S06': 48,
+                'S07.1': 84,
+                'S07.8': 132
+            },
+            '9530': { // Февраль - увеличение на 4%
+                'S02.0': 25,
+                'S06': 50,
+                'S07.1': 87,
+                'S07.8': 137
+            },
+            '2489': { // Март - увеличение на 4%
+                'S02.0': 26,
+                'S06': 52,
+                'S07.1': 91,
+                'S07.8': 143
+            },
+            '3763': { // Апрель - увеличение на 4%
+                'S02.0': 27,
+                'S06': 54,
+                'S07.1': 95,
+                'S07.8': 149
+            },
+            '5673': { // Май - увеличение на 4%
+                'S02.0': 28,
+                'S06': 56,
+                'S07.1': 99,
+                'S07.8': 155
+            },
+            '2376': { // Июнь - увеличение на 4%
+                'S02.0': 29,
+                'S06': 58,
+                'S07.1': 103,
+                'S07.8': 161
+            },
+            '5376': { // Июль - увеличение на 4%
+                'S02.0': 30,
+                'S06': 60,
+                'S07.1': 107,
+                'S07.8': 167
+            },
+            '6859': { // Август - уменьшение на 8%
+                'S02.0': 28,
+                'S06': 55,
+                'S07.1': 98,
+                'S07.8': 154
+            },
+            '8666': { // Сентябрь - уменьшение на 8%
+                'S02.0': 26,
+                'S06': 51,
+                'S07.1': 90,
+                'S07.8': 142
+            },
+            '5664': { // Октябрь - уменьшение на 8%
+                'S02.0': 24,
+                'S06': 47,
+                'S07.1': 83,
+                'S07.8': 131
+            }
+        };
+        
+        // Критерии качества согласно приказу 203Н
+        const qualityCriteria = [
+            "Своевременность оказания медицинской помощи",
+            "Полнота первичного осмотра и обследования",
+            "Обоснованность диагноза",
+            "Адекватность назначенного лечения",
+            "Оценка факторов риска и сопутствующих заболеваний",
+            "Своевременность и полнота диагностических мероприятий",
+            "Оценка эффективности лечения",
+            "Наличие плана динамического наблюдения"
+        ];
+        
+        const documentationCriteria = [
+            "Полнота заполнения медицинской документации",
+            "Своевременность оформления медицинских документов",
+            "Наличие информированного добровольного согласия",
+            "Соответствие диагноза клиническим рекомендациям",
+            "Наличие обоснования назначенного лечения",
+            "Отражение динамики состояния пациента",
+            "Наличие рекомендаций при выписке",
+            "Полнота эпикриза"
+        ];
+        
+        // Данные для разных медицинских направлений
+        const medicalDirections = {
+            травматология: {
+                title: "травматологии",
+                criteriaParagraph: "п. 3.18.1",
+                errorRate: { min: 10, max: 25 },
+                criteriaRates: { min: 70, max: 90 },
+                documentationRates: { min: 65, max: 85 },
+                monthlyDocs: 5549, // Среднемесячное значение
+                specificCriteria: [
+                    "Оценка характера и механизма травмы",
+                    "Оценка неврологического статуса при ЧМТ",
+                    "Оценка состояния сознания по шкале Глазго",
+                    "Оценка витальных функций",
+                    "Проведение рентгенологического исследования"
+                ],
+                commonProblems: [
+                    "несвоевременное оказание медицинской помощи",
+                    "неполный первичный осмотр",
+                    "отсутствие оценки неврологического статуса при ЧМТ"
+                ]
+            },
+            ссз: {
+                title: "болезням системы кровообращения",
+                criteriaParagraph: "п. 3.5",
+                errorRate: { min: 8, max: 20 },
+                criteriaRates: { min: 75, max: 92 },
+                documentationRates: { min: 70, max: 88 },
+                monthlyDocs: 6200,
+                specificCriteria: [
+                    "Оценка факторов риска сердечно-сосудистых заболеваний",
+                    "Контроль артериального давления",
+                    "Оценка липидного профиля",
+                    "Назначение антиагрегантной терапии",
+                    "Оценка необходимости статинотерапии"
+                ],
+                commonProblems: [
+                    "неполная оценка факторов риска",
+                    "отсутствие контроля артериального давления",
+                    "неназначение антиагрегантной терапии при показаниях"
+                ]
+            },
+            онкология: {
+                title: "онкологическим заболеваниям",
+                criteriaParagraph: "п. 3.10",
+                errorRate: { min: 5, max: 15 },
+                criteriaRates: { min: 80, max: 95 },
+                documentationRates: { min: 75, max: 90 },
+                monthlyDocs: 4800,
+                specificCriteria: [
+                    "Определение стадии заболевания по TNM",
+                    "Оценка гистологического заключения",
+                    "План противоопухолевого лечения",
+                    "Оценка показаний к хирургическому лечению",
+                    "Контроль побочных эффектов терапии"
+                ],
+                commonProblems: [
+                    "неполное описание стадии заболевания",
+                    "отсутствие плана динамического наблюдения",
+                    "несвоевременное направление на консультацию онколога"
+                ]
+            },
+            педиатрия: {
+                title: "педиатрии",
+                criteriaParagraph: "п. 3.16",
+                errorRate: { min: 12, max: 28 },
+                criteriaRates: { min: 68, max: 88 },
+                documentationRates: { min: 62, max: 85 },
+                monthlyDocs: 7200,
+                specificCriteria: [
+                    "Оценка физического развития ребенка",
+                    "Оценка нервно-психического развития",
+                    "Учет возрастных особенностей",
+                    "Контроль профилактических прививок",
+                    "Оценка социального анамнеза"
+                ],
+                commonProblems: [
+                    "неполная оценка физического развития",
+                    "отсутствие учета возрастных дозировок препаратов",
+                    "неполный анамнез жизни ребенка"
+                ]
+            },
+            гинекология: {
+                title: "гинекологии",
+                criteriaParagraph: "п. 3.15",
+                errorRate: { min: 7, max: 18 },
+                criteriaRates: { min: 72, max: 90 },
+                documentationRates: { min: 70, max: 87 },
+                monthlyDocs: 5800,
+                specificCriteria: [
+                    "Оценка менструальной функции",
+                    "Оценка репродуктивного анамнеза",
+                    "Результаты гинекологического осмотра",
+                    "Оценка данных УЗИ органов малого таза",
+                    "План обследования при нарушениях цикла"
+                ],
+                commonProblems: [
+                    "неполный гинекологический анамнез",
+                    "отсутствие оценки менструальной функции",
+                    "несвоевременное направление на УЗИ"
+                ]
+            }
+        };
+        
+        // Ссылки на элементы DOM
+        const periodSelector = document.getElementById('periodSelector');
+        const totalValue = document.getElementById('totalValue');
+        const errorsValue = document.getElementById('errorsValue');
+        const successValue = document.getElementById('successValue');
+        const errorPercentage = document.getElementById('errorPercentage');
+        const criteriaTableBody = document.querySelector('#criteriaTable tbody');
+        const documentationTableBody = document.querySelector('#documentationTable tbody');
+        const aiQuery = document.getElementById('aiQuery');
+        const aiResponse = document.getElementById('aiResponse');
+        
+        // Переменные для хранения экземпляров графиков
+        let pieChart, barChart, criteriaPerformanceChart, documentationQualityChart;
+        let documentsDynamicChart, errorsDynamicChart;
+        let aiCharts = []; // Для хранения диаграмм в отчете AI
+        
+        // Функция для генерации случайных данных по неделям
+        function generateWeeklyData(totalDocs, totalErrors) {
+            const weeks = 4;
+            const documents = [];
+            const errors = [];
+            const errorRates = [];
+            
+            // Генерируем случайные значения для недель, которые в сумме дают totalDocs
+            let remainingDocs = totalDocs;
+            let remainingErrors = totalErrors;
+            
+            for (let i = 0; i < weeks - 1; i++) {
+                // Генерируем случайное количество документов для недели (от 20% до 40% от оставшихся)
+                const maxDocs = Math.min(remainingDocs, Math.floor(remainingDocs * 0.4));
+                const minDocs = Math.floor(remainingDocs * 0.2);
+                const weekDocs = Math.floor(Math.random() * (maxDocs - minDocs + 1)) + minDocs;
+                documents.push(weekDocs);
+                remainingDocs -= weekDocs;
+                
+                // Генерируем случайный процент ошибок для недели (от 50% до 150% от среднего процента)
+                const avgErrorRate = (totalErrors / totalDocs) * 100;
+                const minErrorRate = avgErrorRate * 0.5;
+                const maxErrorRate = Math.min(avgErrorRate * 1.5, 20); // Ограничиваем максимальный процент 20%
+                const weekErrorRate = Math.random() * (maxErrorRate - minErrorRate) + minErrorRate;
+                errorRates.push(weekErrorRate);
+                
+                // Рассчитываем количество ошибок для недели
+                const weekErrors = Math.round(weekDocs * weekErrorRate / 100);
+                errors.push(weekErrors);
+                remainingErrors -= weekErrors;
+            }
+            
+            // Последняя неделя получает оставшиеся документы и ошибки
+            documents.push(remainingDocs);
+            const lastWeekErrorRate = (remainingErrors / remainingDocs) * 100;
+            errorRates.push(lastWeekErrorRate);
+            errors.push(remainingErrors);
+            
+            return {
+                labels: ['1 неделя', '2 неделя', '3 неделя', '4 неделя'],
+                documents: documents,
+                errors: errors,
+                errorRates: errorRates.map(rate => parseFloat(rate.toFixed(1)))
+            };
+        }
+        
+        // Функция для получения ошибок по кодам МКБ для выбранного периода
+        function getErrorsByCode(selectedValue) {
+            if (selectedValue === "year") {
+                // Для года суммируем ошибки по всем месяцам
+                const yearlyErrors = {
+                    'S02.0': 0,
+                    'S06': 0,
+                    'S07.1': 0,
+                    'S07.8': 0
+                };
+                
+                Object.values(monthlyErrorsByCode).forEach(monthErrors => {
+                    yearlyErrors['S02.0'] += monthErrors['S02.0'];
+                    yearlyErrors['S06'] += monthErrors['S06'];
+                    yearlyErrors['S07.1'] += monthErrors['S07.1'];
+                    yearlyErrors['S07.8'] += monthErrors['S07.8'];
+                });
+                
+                return yearlyErrors;
+            } else {
+                // Для конкретного месяца возвращаем фиксированные значения
+                return monthlyErrorsByCode[selectedValue] || {
+                    'S02.0': 0,
+                    'S06': 0,
+                    'S07.1': 0,
+                    'S07.8': 0
+                };
+            }
+        }
+        
+        // Функция для генерации данных по критериям качества
+        function generateCriteriaData(total, direction) {
+            const criteriaData = {};
+            const directionData = medicalDirections[direction] || medicalDirections.травматология;
+            
+            qualityCriteria.forEach(criterion => {
+                // Генерируем случайный процент выполнения в заданном диапазоне
+                const complianceRate = Math.floor(Math.random() * 
+                    (directionData.criteriaRates.max - directionData.criteriaRates.min + 1)) + 
+                    directionData.criteriaRates.min;
+                const compliantCount = Math.round(total * complianceRate / 100);
+                
+                criteriaData[criterion] = {
+                    compliant: compliantCount,
+                    nonCompliant: total - compliantCount,
+                    complianceRate: complianceRate
+                };
+            });
+            
+            return criteriaData;
+        }
+        
+        // Функция для генерации данных по качеству документации
+        function generateDocumentationData(total, direction) {
+            const documentationData = {};
+            const directionData = medicalDirections[direction] || medicalDirections.травматология;
+            
+            documentationCriteria.forEach(criterion => {
+                // Генерируем случайный процент соответствия в заданном диапазоне
+                const complianceRate = Math.floor(Math.random() * 
+                    (directionData.documentationRates.max - directionData.documentationRates.min + 1)) + 
+                    directionData.documentationRates.min;
+                const compliantCount = Math.round(total * complianceRate / 100);
+                
+                documentationData[criterion] = {
+                    compliant: compliantCount,
+                    nonCompliant: total - compliantCount,
+                    complianceRate: complianceRate
+                };
+            });
+            
+            return documentationData;
+        }
+        
+        // Функция для определения направления из запроса
+        function detectDirection(query) {
+            const lowerQuery = query.toLowerCase();
+            
+            if (lowerQuery.includes("ссз") || lowerQuery.includes("серд") || lowerQuery.includes("кровообращен")) {
+                return "ссз";
+            } else if (lowerQuery.includes("онкологи")) {
+                return "онкология";
+            } else if (lowerQuery.includes("педиатр") || lowerQuery.includes("детск")) {
+                return "педиатрия";
+            } else if (lowerQuery.includes("гинеколог") || lowerQuery.includes("беременност") || lowerQuery.includes("род")) {
+                return "гинекология";
+            } else if (lowerQuery.includes("травматолог")) {
+                return "травматология";
+            }
+            
+            return "травматология"; // значение по умолчанию
+        }
+        
+        // Функция для определения количества месяцев из запроса
+        function detectMonths(query) {
+            const lowerQuery = query.toLowerCase();
+            const monthMatch = lowerQuery.match(/(\d+)\s*месяц/);
+            
+            if (monthMatch && monthMatch[1]) {
+                return parseInt(monthMatch[1]);
+            }
+            
+            // Если месяц не указан, используем значение по умолчанию
+            return 3;
+        }
+        
+        // Функция обновления дашборда
+        function updateDashboard() {
+            // Получаем выбранный период
+            const selectedValue = periodSelector.value;
+            
+            if (selectedValue === "year") {
+                // За год
+                totalDocuments = monthlyData.documents.reduce((sum, value) => sum + value, 0);
+                totalErrors = monthlyData.errors.reduce((sum, value) => sum + value, 0);
+            } else {
+                // За конкретный месяц
+                totalDocuments = parseInt(selectedValue);
+                // Находим индекс месяца по количеству документов
+                const monthIndex = monthlyData.documents.indexOf(totalDocuments);
+                if (monthIndex !== -1) {
+                    totalErrors = monthlyData.errors[monthIndex];
+                } else {
+                    // Если не нашли, рассчитываем по среднему проценту
+                    totalErrors = Math.round(totalDocuments * 6 / 100);
+                }
+            }
+            
+            const successCount = totalDocuments - totalErrors;
+            const errorPercent = ((totalErrors / totalDocuments) * 100).toFixed(1);
+            
+            // Получаем ошибки по кодам МКБ для выбранного периода
+            const errorsByCode = getErrorsByCode(selectedValue);
+            
+            // Генерируем данные по критериям
+            const criteriaData = generateCriteriaData(totalDocuments, "травматология");
+            const documentationData = generateDocumentationData(totalDocuments, "травматология");
+            
+            // Обновляем статистику
+            totalValue.textContent = totalDocuments.toLocaleString('ru-RU');
+            errorsValue.textContent = totalErrors.toLocaleString('ru-RU');
+            successValue.textContent = successCount.toLocaleString('ru-RU');
+            errorPercentage.textContent = `${errorPercent}%`;
+            
+            // Обновляем таблицы
+            updateTables(criteriaData, documentationData);
+            
+            // Обновляем графики
+            updateCharts(totalErrors, successCount, criteriaData, documentationData, selectedValue, errorsByCode);
+        }
+        
+        // Функция обновления таблиц
+        function updateTables(criteriaData, documentationData) {
+            // Очищаем таблицы
+            criteriaTableBody.innerHTML = '';
+            documentationTableBody.innerHTML = '';
+            
+            // Заполняем таблицу критериев качества
+            qualityCriteria.forEach(criterion => {
+                const data = criteriaData[criterion];
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${criterion}</td>
+                    <td>${data.compliant.toLocaleString('ru-RU')}</td>
+                    <td>${data.nonCompliant.toLocaleString('ru-RU')}</td>
+                    <td>${data.complianceRate}%</td>
+                `;
+                
+                criteriaTableBody.appendChild(row);
+            });
+            
+            // Заполняем таблицу качества документации
+            documentationCriteria.forEach(criterion => {
+                const data = documentationData[criterion];
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${criterion}</td>
+                    <td>${data.compliant.toLocaleString('ru-RU')}</td>
+                    <td>${data.nonCompliant.toLocaleString('ru-RU')}</td>
+                    <td>${data.complianceRate}%</td>
+                `;
+                
+                documentationTableBody.appendChild(row);
+            });
+        }
+        
+        // Функция обновления графиков
+        function updateCharts(errorCount, successCount, criteriaData, documentationData, selectedValue, errorsByCode) {
+            // Данные для графиков
+            const codes = Object.keys(errorsByCode);
+            const errorValues = Object.values(errorsByCode);
+            
+            // Круговая диаграмма - распределение документов
+            if (pieChart) pieChart.destroy();
+            const pieCtx = document.getElementById('pieChart').getContext('2d');
+            pieChart = new Chart(pieCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['С ошибками', 'Успешные'],
+                    datasets: [{
+                        data: [errorCount, successCount],
+                        backgroundColor: ['#e74c3c', '#2ecc71']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Распределение документов по качеству'
+                        }
+                    }
+                }
+            });
+            
+            // Столбчатая диаграмма - ошибки по кодам МКБ
+            if (barChart) barChart.destroy();
+            const barCtx = document.getElementById('barChart').getContext('2d');
+            barChart = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: codes,
+                    datasets: [{
+                        label: 'Количество ошибок',
+                        data: errorValues,
+                        backgroundColor: '#3498db'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Ошибки по кодам МКБ-10'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Количество ошибок'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // График выполнения критериев качества
+            if (criteriaPerformanceChart) criteriaPerformanceChart.destroy();
+            const criteriaCtx = document.getElementById('criteriaPerformanceChart').getContext('2d');
+            
+            const criteriaLabels = qualityCriteria;
+            const criteriaRates = qualityCriteria.map(criterion => criteriaData[criterion].complianceRate);
+            
+            criteriaPerformanceChart = new Chart(criteriaCtx, {
+                type: 'bar',
+                data: {
+                    labels: criteriaLabels.map(label => {
+                        // Сокращаем длинные названия для лучшего отображения
+                        return label.length > 30 ? label.substring(0, 30) + '...' : label;
+                    }),
+                    datasets: [{
+                        label: '% выполнения',
+                        data: criteriaRates,
+                        backgroundColor: '#9b59b6'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Выполнение критериев качества'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Процент выполнения'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // График качества документации
+            if (documentationQualityChart) documentationQualityChart.destroy();
+            const docCtx = document.getElementById('documentationQualityChart').getContext('2d');
+            
+            const docLabels = documentationCriteria;
+            const docRates = documentationCriteria.map(criterion => documentationData[criterion].complianceRate);
+            
+            documentationQualityChart = new Chart(docCtx, {
+                type: 'bar',
+                data: {
+                    labels: docLabels.map(label => {
+                        // Сокращаем длинные названия для лучшего отображения
+                        return label.length > 30 ? label.substring(0, 30) + '...' : label;
+                    }),
+                    datasets: [{
+                        label: '% соответствия',
+                        data: docRates,
+                        backgroundColor: '#e67e22'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Качество документации по критериям'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Процент соответствия'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // График динамики документов
+            if (documentsDynamicChart) documentsDynamicChart.destroy();
+            const documentsDynamicCtx = document.getElementById('documentsDynamicChart').getContext('2d');
+            
+            let documentsTitle, documentsLabels, documentsData;
+            
+            if (selectedValue === "year") {
+                // За год - показываем по месяцам
+                documentsTitle = 'Динамика количества документов по месяцам';
+                documentsLabels = monthlyData.labels;
+                documentsData = monthlyData.documents;
+            } else {
+                // За месяц - показываем по неделям
+                documentsTitle = 'Динамика количества документов по неделям';
+                // Генерируем случайные данные по неделям
+                const monthData = generateWeeklyData(totalDocuments, totalErrors);
+                documentsLabels = monthData.labels;
+                documentsData = monthData.documents;
+            }
+            
+            documentsDynamicChart = new Chart(documentsDynamicCtx, {
+                type: 'line',
+                data: {
+                    labels: documentsLabels,
+                    datasets: [{
+                        label: 'Количество документов',
+                        data: documentsData,
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: documentsTitle
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Количество документов'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // График динамики ошибок
+            if (errorsDynamicChart) errorsDynamicChart.destroy();
+            const errorsDynamicCtx = document.getElementById('errorsDynamicChart').getContext('2d');
+            
+            let errorsTitle, errorsLabels, errorsData;
+            
+            if (selectedValue === "year") {
+                // За год - показываем по месяцам
+                errorsTitle = 'Динамика процента ошибок по месяцам';
+                errorsLabels = monthlyData.labels;
+                errorsData = monthlyData.errorRates;
+            } else {
+                // За месяц - показываем по неделям
+                errorsTitle = 'Динамика процента ошибок по неделям';
+                // Генерируем случайные данные по неделям
+                const monthData = generateWeeklyData(totalDocuments, totalErrors);
+                errorsLabels = monthData.labels;
+                errorsData = monthData.errorRates;
+            }
+            
+            errorsDynamicChart = new Chart(errorsDynamicCtx, {
+                type: 'line',
+                data: {
+                    labels: errorsLabels,
+                    datasets: [{
+                        label: selectedValue === "year" ? 'Процент ошибок' : 'Процент ошибок',
+                        data: errorsData,
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: errorsTitle
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: selectedValue === "year" ? 20 : 15,
+                            title: {
+                                display: true,
+                                text: 'Процент ошибок (%)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Функция для генерации отчета
+        function generateReport() {
+            const query = aiQuery.value.trim();
+            
+            if (!query) {
+                aiResponse.innerHTML = '<p style="color: red;">Пожалуйста, введите запрос для генерации отчета.</p>';
+                return;
+            }
+            
+            // Уничтожаем предыдущие диаграммы AI
+            aiCharts.forEach(chart => chart.destroy());
+            aiCharts = [];
+            
+            // Определяем медицинское направление из запроса
+            const direction = detectDirection(query);
+            const directionData = medicalDirections[direction];
+            
+            // Определяем количество месяцев из запроса
+            const monthsCount = detectMonths(query);
+            
+            // Рассчитываем общее количество документов на основе количества месяцев
+            const totalDocs = directionData.monthlyDocs * monthsCount;
+            
+            // Генерируем случайный процент ошибок в заданном диапазоне для направления
+            const errorRate = Math.floor(Math.random() * 
+                (directionData.errorRate.max - directionData.errorRate.min + 1)) + 
+                directionData.errorRate.min;
+            const errorCount = Math.round(totalDocs * errorRate / 100);
+            const successCount = totalDocs - errorCount;
+            
+            const criteriaData = generateCriteriaData(totalDocs, direction);
+            const documentationData = generateDocumentationData(totalDocs, direction);
+            
+            // Находим самый проблемный критерий
+            let worstCriterion = "";
+            let worstRate = 100;
+            
+            for (const criterion in criteriaData) {
+                if (criteriaData[criterion].complianceRate < worstRate) {
+                    worstRate = criteriaData[criterion].complianceRate;
+                    worstCriterion = criterion;
+                }
+            }
+            
+            // Находим самый проблемный критерий документации
+            let worstDocCriterion = "";
+            let worstDocRate = 100;
+            
+            for (const criterion in documentationData) {
+                if (documentationData[criterion].complianceRate < worstDocRate) {
+                    worstDocRate = documentationData[criterion].complianceRate;
+                    worstDocCriterion = criterion;
+                }
+            }
+            
+            // Рассчитываем средние показатели
+            const avgCriteriaRate = Math.round(Object.values(criteriaData).reduce((sum, item) => sum + item.complianceRate, 0) / Object.keys(criteriaData).length);
+            const avgDocumentationRate = Math.round(Object.values(documentationData).reduce((sum, item) => sum + item.complianceRate, 0) / Object.keys(documentationData).length);
+            
+            // Формируем отчет
+            aiResponse.innerHTML = `
+                <h3>Отчет по ${directionData.title} за ${monthsCount} ${monthsCount === 1 ? 'месяц' : monthsCount < 5 ? 'месяца' : 'месяцев'}</h3>
+                <p><strong>Критерии оценки:</strong> ${directionData.criteriaParagraph} Приказа 203Н</p>
+                
+                <div class="ai-charts">
+                    <div class="ai-chart-container">
+                        <h4>Общая статистика</h4>
+                        <canvas id="aiOverallChart"></canvas>
+                    </div>
+                    <div class="ai-chart-container">
+                        <h4>Критерии качества</h4>
+                        <canvas id="aiCriteriaChart"></canvas>
+                    </div>
+                    <div class="ai-chart-container">
+                        <h4>Качество документации</h4>
+                        <canvas id="aiDocumentationChart"></canvas>
+                    </div>
+                </div>
+                
+                <h4>Общая статистика:</h4>
+                <ul>
+                    <li>Проанализировано документов: ${totalDocs.toLocaleString('ru-RU')}</li>
+                    <li>Документов с ошибками: ${errorCount.toLocaleString('ru-RU')} (${errorRate}%)</li>
+                    <li>Успешных документов: ${successCount.toLocaleString('ru-RU')} (${100 - errorRate}%)</li>
+                </ul>
+                
+                <h4>Анализ выполнения критериев качества:</h4>
+                <ul>
+                    <li>Средний процент выполнения критериев: ${avgCriteriaRate}%</li>
+                    <li>Наиболее проблемный критерий: "${worstCriterion}" (выполняется только в ${worstRate}% случаев)</li>
+                    <li>Специфические критерии для ${directionData.title}: ${directionData.specificCriteria.slice(0, 3).join(", ")}</li>
+                </ul>
+                
+                <h4>Анализ качества документации:</h4>
+                <ul>
+                    <li>Средний процент соответствия документации: ${avgDocumentationRate}%</li>
+                    <li>Наиболее проблемный аспект документации: "${worstDocCriterion}" (соответствует только в ${worstDocRate}% случаев)</li>
+                </ul>
+                
+                <h4>Основные проблемы:</h4>
+                <ul>
+                    ${directionData.commonProblems.map(problem => `<li>${problem}</li>`).join('')}
+                </ul>
+                
+                <h4>Рекомендации:</h4>
+                <ul>
+                    <li>Провести дополнительное обучение медицинского персонала по заполнению документации</li>
+                    <li>Внедрить чек-листы для контроля качества медицинской документации</li>
+                    <li>Усилить контроль со стороны старшего медицинского персонала</li>
+                    <li>Провести аудит документации ежеквартально</li>
+                </ul>
+            `;
+            
+            // Создаем диаграммы для отчета AI
+            setTimeout(() => {
+                // Диаграмма общей статистики
+                const overallCtx = document.getElementById('aiOverallChart').getContext('2d');
+                const overallChart = new Chart(overallCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['С ошибками', 'Успешные'],
+                        datasets: [{
+                            data: [errorCount, successCount],
+                            backgroundColor: ['#e74c3c', '#2ecc71']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+                aiCharts.push(overallChart);
+                
+                // Диаграмма критериев качества
+                const criteriaCtx = document.getElementById('aiCriteriaChart').getContext('2d');
+                const criteriaChart = new Chart(criteriaCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Выполнено', 'Не выполнено'],
+                        datasets: [{
+                            data: [avgCriteriaRate, 100 - avgCriteriaRate],
+                            backgroundColor: ['#2ecc71', '#e74c3c']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+                aiCharts.push(criteriaChart);
+                
+                // Диаграмма качества документации
+                const documentationCtx = document.getElementById('aiDocumentationChart').getContext('2d');
+                const documentationChart = new Chart(documentationCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Соответствует', 'Не соответствует'],
+                        datasets: [{
+                            data: [avgDocumentationRate, 100 - avgDocumentationRate],
+                            backgroundColor: ['#2ecc71', '#e74c3c']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+                aiCharts.push(documentationChart);
+            }, 100);
+        }
+        
+        // Инициализация дашборда при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDashboard();
+        });
+    </script>
+</body>
+</html>
